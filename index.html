@@ -341,8 +341,8 @@
     </div>
 
     <script>
-        // API Base URL (替換成您自己的後端網址)
-        const BASE_API_URL = "https://weather-taiwan-gianni.zeabur.app"; // 如果是同源，可以留空或設定為 '/api/weather'
+        // API Base URL (已修正為您的 Zeabur 服務網址)
+        const BASE_API_URL = "https://weather-taiwan-gianni.zeabur.app";
         const DEFAULT_CITY = "臺北市"; // 預設載入城市
 
         // --- 特務風格圖示映射 ---
@@ -471,7 +471,9 @@
                 document.getElementById('mainContent').style.display = 'none';
 
                 const delayPromise = new Promise(resolve => setTimeout(resolve, 800)); // 縮短至 0.8s
-                const fetchPromise = fetch(API_URL).then(res => {
+                
+                // 🚨 關鍵修正 2: 加入 { mode: 'cors' } 選項來嘗試解決 CORB 錯誤
+                const fetchPromise = fetch(API_URL, { mode: 'cors' }).then(res => { 
                     if (!res.ok) throw new Error(`API response error: ${res.statusText}`);
                     return res.json();
                 });
@@ -501,7 +503,8 @@
         async function populateCitySelector() {
             const selector = document.getElementById('citySelector');
             try {
-                const response = await fetch(`${BASE_API_URL}/api/cities`);
+                // 🚨 關鍵修正 1: 加入 { mode: 'cors' } 選項來嘗試解決 CORB 錯誤
+                const response = await fetch(`${BASE_API_URL}/api/cities`, { mode: 'cors' });
                 const json = await response.json();
                 
                 if (json.success && json.cities) {
@@ -546,13 +549,6 @@
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
                 
-                // --- 步驟 2.1: 使用經緯度尋找最接近的縣市 (需要新的後端 API 或前端內建資料) ---
-                // CWA F-C0032-001 僅支援縣市名稱，不支援經緯度查詢。
-                // 為了實作「定位」功能，我們需要一個**經緯度轉縣市**的服務。
-                // 由於此服務較複雜，且需使用其他 API 或靜態資料，
-                // 這裡簡化處理：直接顯示定位成功，然後載入預設城市。
-                // ***理想的實作*** 是新增一個後端 API 接收經緯度，並回傳最接近的縣市名稱。
-
                 // 這裡暫時實作「定位成功後，載入預設城市並提示」
                 alert(`特務警報: 經緯度定位成功！(Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)})。
                 
@@ -598,9 +594,6 @@
             
             // 綁定定位按鈕事件
             document.getElementById('locateButton').addEventListener('click', locateAndFetchWeather);
-            
-            // 初始載入天氣 (由 populateCitySelector 完成)
-            // fetchWeather(DEFAULT_CITY); 
         });
     </script>
 </body>
