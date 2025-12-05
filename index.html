@@ -461,7 +461,7 @@
         // --- 核心資料抓取邏輯 (可選城市) ---
         async function fetchWeather(city = DEFAULT_CITY) {
             // 替換 URL 為通用 API
-            const API_URL = `${BASE_API_URL}/api/weather/${encodeURIComponent(city)}`;
+            const API_URL = `${BASE_API_URL}/api/weather/${encodeURIComponent(city)}?t=${new Date().getTime()}`;
             
             try {
                 // 顯示 Loading 畫面
@@ -504,7 +504,7 @@
             const selector = document.getElementById('citySelector');
             try {
                 // 🚨 關鍵修正 1: 加入 { mode: 'cors' } 選項來嘗試解決 CORB 錯誤
-                const response = await fetch(`${BASE_API_URL}/api/cities`, { mode: 'cors' });
+                const response = await fetch(`${BASE_API_URL}/api/cities?t=${new Date().getTime()}`, { mode: 'cors' });
                 const json = await response.json();
                 
                 if (json.success && json.cities) {
