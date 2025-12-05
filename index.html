@@ -1,958 +1,917 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8" />
-    <title>台灣特務氣象局</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <!-- Font Awesome -->
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-        integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
-        crossorigin="anonymous"
-        referrerpolicy="no-referrer"
-    />
-
-    <style>
-        :root {
-            --spy-bg: #050814;
-            --spy-panel: #0e172a;
-            --spy-accent: #ff6b6b;
-            --spy-accent-soft: rgba(255, 107, 107, 0.2);
-            --spy-secondary: #22d3ee;
-            --spy-text: #f9fafb;
-            --spy-muted: #9ca3af;
-            --spy-border: rgba(148, 163, 184, 0.35);
-            --spy-card: rgba(15, 23, 42, 0.9);
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            min-height: 100vh;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-                sans-serif;
-            background: radial-gradient(circle at top, #1f2937 0, #020617 40%, #000 100%);
-            color: var(--spy-text);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-        }
-
-        .app-shell {
-            width: 100%;
-            max-width: 1080px;
-            background: linear-gradient(
-                    145deg,
-                    rgba(148, 163, 184, 0.14),
-                    rgba(30, 64, 175, 0.4)
-                ),
-                var(--spy-bg);
-            border-radius: 24px;
-            border: 1px solid rgba(148, 163, 184, 0.5);
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65);
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* 上方 HUD */
-        .hud-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 20px;
-            background: radial-gradient(circle at top left, #1f2937 0, #020617 55%);
-            border-bottom: 1px solid rgba(148, 163, 184, 0.4);
-        }
-
-        .hud-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .hud-led {
-            width: 8px;
-            height: 8px;
-            border-radius: 999px;
-            background: #22c55e;
-            box-shadow: 0 0 8px rgba(34, 197, 94, 0.9);
-        }
-
-        .hud-title {
-            font-size: 0.9rem;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: var(--spy-muted);
-        }
-
-        .hud-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.8rem;
-            color: var(--spy-muted);
-        }
-
-        .hud-pill {
-            border-radius: 999px;
-            padding: 3px 10px;
-            border: 1px solid rgba(148, 163, 184, 0.4);
-            background: rgba(15, 23, 42, 0.8);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .hud-pill i {
-            font-size: 0.7rem;
-            color: var(--spy-secondary);
-        }
-
-        /* Loading 全畫面 */
-        #loadingScreen {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 16px;
-            backdrop-filter: blur(18px);
-            background: radial-gradient(
-                    circle at top,
-                    rgba(30, 64, 175, 0.15),
-                    rgba(15, 23, 42, 0.95)
-                );
-            z-index: 20;
-        }
-
-        .loading-radar {
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            border: 2px solid rgba(148, 163, 184, 0.4);
-            border-top-color: var(--spy-secondary);
-            animation: spin 1.4s linear infinite;
-            box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
-        }
-
-        .loading-text {
-            text-align: center;
-            font-size: 0.95rem;
-            color: var(--spy-muted);
-        }
-
-        .loading-text span {
-            display: block;
-            font-size: 0.8rem;
-            opacity: 0.8;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* 主要內容 */
-        #mainContent {
-            display: none;
-            padding: 20px 22px 22px;
-        }
-
-        .header-row {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 14px;
-            justify-content: space-between;
-            margin-bottom: 16px;
-        }
-
-        .heading-block h1 {
-            margin: 0;
-            font-size: 1.4rem;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-        }
-
-        .heading-block small {
-            display: block;
-            margin-top: 4px;
-            font-size: 0.75rem;
-            color: var(--spy-muted);
-            letter-spacing: 0.12em;
-        }
-
-        .control-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            align-items: center;
-            justify-content: flex-end;
-        }
-
-        #citySelector {
-            min-width: 160px;
-            border-radius: 999px;
-            border: 1px solid var(--spy-border);
-            background: rgba(15, 23, 42, 0.85);
-            color: var(--spy-text);
-            padding: 6px 12px;
-            font-size: 0.85rem;
-            outline: none;
-        }
-
-        #citySelector:focus {
-            border-color: var(--spy-secondary);
-            box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.4);
-        }
-
-        #locateButton {
-            border-radius: 999px;
-            border: none;
-            background: radial-gradient(circle at top, #f97316, #ea580c);
-            color: #fff;
-            padding: 7px 14px;
-            font-size: 0.85rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-            box-shadow: 0 12px 20px rgba(234, 88, 12, 0.35);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        #locateButton i {
-            font-size: 0.9rem;
-        }
-
-        #locateButton:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 18px 30px rgba(234, 88, 12, 0.45);
-        }
-
-        /* 更新時間顯示 */
-        .update-pill {
-            font-size: 0.8rem;
-            color: var(--spy-muted);
-            background: rgba(15, 23, 42, 0.9);
-            border-radius: 999px;
-            padding: 4px 10px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            border: 1px dashed rgba(148, 163, 184, 0.6);
-        }
-
-        .update-pill i {
-            font-size: 0.75rem;
-            color: var(--spy-secondary);
-        }
-
-        /* 內容區 */
-        .body-grid {
-            display: grid;
-            grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.4fr);
-            gap: 18px;
-            margin-top: 14px;
-        }
-
-        @media (max-width: 880px) {
-            .body-grid {
-                grid-template-columns: minmax(0, 1fr);
-            }
-        }
-
-        .panel {
-            border-radius: 18px;
-            border: 1px solid var(--spy-border);
-            background: rgba(15, 23, 42, 0.88);
-            padding: 14px 14px 12px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .panel::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            background: radial-gradient(
-                circle at top right,
-                rgba(56, 189, 248, 0.16),
-                transparent 55%
-            );
-            opacity: 0.7;
-        }
-
-        .panel-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .panel-title {
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.18em;
-            color: var(--spy-muted);
-        }
-
-        .panel-sub {
-            font-size: 0.75rem;
-            color: var(--spy-muted);
-        }
-
-        /* 預報卡片 */
-        #forecastList {
-            position: relative;
-            z-index: 1;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-            gap: 10px;
-        }
-
-        .forecast-card {
-            border-radius: 16px;
-            border: 1px solid rgba(148, 163, 184, 0.4);
-            background: rgba(15, 23, 42, 0.95);
-            padding: 10px 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            backdrop-filter: blur(10px);
-            position: relative;
-        }
-
-        .forecast-card::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            background: linear-gradient(
-                135deg,
-                rgba(248, 250, 252, 0.04),
-                transparent 60%
-            );
-        }
-
-        .fc-top-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 4px;
-            z-index: 1;
-        }
-
-        .fc-time {
-            font-size: 0.8rem;
-            color: var(--spy-muted);
-        }
-
-        .fc-label {
-            font-size: 0.7rem;
-            padding: 2px 6px;
-            border-radius: 999px;
-            border: 1px solid rgba(56, 189, 248, 0.5);
-            color: #e0f2fe;
-            background: rgba(8, 47, 73, 0.8);
-        }
-
-        .fc-main-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-        }
-
-        .fc-temp-block {
-            display: flex;
-            align-items: baseline;
-            gap: 4px;
-        }
-
-        .fc-temp-main {
-            font-size: 1.85rem;
-            font-weight: 700;
-        }
-
-        .fc-temp-range {
-            font-size: 0.8rem;
-            color: var(--spy-muted);
-        }
-
-        .fc-weather {
-            font-size: 0.9rem;
-            color: #e5e7eb;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .fc-weather i {
-            color: var(--spy-secondary);
-        }
-
-        .fc-meta-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 4px;
-            font-size: 0.75rem;
-            color: var(--spy-muted);
-        }
-
-        .fc-meta-pill {
-            padding: 3px 7px;
-            border-radius: 999px;
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(148, 163, 184, 0.4);
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .fc-meta-pill i {
-            font-size: 0.75rem;
-        }
-
-        /* 建議區 */
-        .advice-list {
-            position: relative;
-            z-index: 1;
-            display: grid;
-            grid-template-columns: minmax(0, 1fr);
-            gap: 8px;
-            margin-top: 4px;
-        }
-
-        .advice-item {
-            border-radius: 14px;
-            background: rgba(15, 23, 42, 0.9);
-            padding: 8px 9px;
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-            border: 1px dashed rgba(148, 163, 184, 0.6);
-            font-size: 0.8rem;
-        }
-
-        .advice-icon {
-            width: 22px;
-            height: 22px;
-            border-radius: 999px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: radial-gradient(circle at top, #22d3ee, #0ea5e9);
-            color: #0b1020;
-            flex-shrink: 0;
-        }
-
-        .advice-icon.hot {
-            background: radial-gradient(circle at top, #fb7185, #f97316);
-        }
-
-        .advice-label {
-            font-size: 0.7rem;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-            color: var(--spy-muted);
-            margin-bottom: 1px;
-        }
-
-        .advice-text {
-            color: #e5e7eb;
-        }
-
-        /* 右側盤面：城市與摘要 */
-        .city-panel {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .city-name-display {
-            border-radius: 18px;
-            border: 1px solid var(--spy-border);
-            background: radial-gradient(
-                    circle at top left,
-                    rgba(248, 250, 252, 0.08),
-                    transparent 60%
-                ),
-                rgba(15, 23, 42, 0.96);
-            padding: 14px 12px;
-        }
-
-        .city-name-line {
-            font-size: 0.85rem;
-            color: var(--spy-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.18em;
-        }
-
-        .city-name-main {
-            margin-top: 6px;
-            font-size: 1.35rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .city-name-main i {
-            color: var(--spy-secondary);
-        }
-
-        .city-name-sub {
-            font-size: 0.8rem;
-            color: var(--spy-muted);
-            margin-top: 4px;
-        }
-
-        .summary-panel {
-            border-radius: 18px;
-            border: 1px solid var(--spy-border);
-            background: rgba(15, 23, 42, 0.95);
-            padding: 10px 12px;
-            font-size: 0.8rem;
-            color: var(--spy-muted);
-        }
-
-        .summary-title {
-            font-size: 0.8rem;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
-
-        .summary-body {
-            line-height: 1.4;
-        }
-
-        .summary-body strong {
-            color: #f9fafb;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>MI6 Weather Ops Console</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Font Awesome -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+
+  <style>
+    :root {
+      --mi6-bg: #020617;
+      --mi6-panel: #050816;
+      --mi6-panel-soft: #020617;
+      --mi6-gold: #fbbf24;
+      --mi6-cyan: #22d3ee;
+      --mi6-red: #f97373;
+      --mi6-text: #f9fafb;
+      --mi6-muted: #9ca3af;
+      --mi6-border: rgba(148, 163, 184, 0.4);
+      --mi6-border-soft: rgba(37, 99, 235, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background:
+        radial-gradient(circle at top, #111827 0, #020617 45%, #000 100%);
+      color: var(--mi6-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .mi6-shell {
+      width: 100%;
+      max-width: 1180px;
+      background:
+        radial-gradient(circle at top left, rgba(15, 23, 42, 0.9), #020617 55%);
+      border-radius: 26px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.85);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ========== HUD BAR ========== */
+    .mi6-hud {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background:
+        radial-gradient(circle at top left, rgba(250, 204, 21, 0.08), transparent 55%),
+        radial-gradient(circle at top right, rgba(56, 189, 248, 0.15), transparent 55%),
+        linear-gradient(90deg, #020617 0, #020617 25%, #020617 100%);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.6);
+      position: relative;
+    }
+
+    .mi6-hud::before {
+      content: "";
+      position: absolute;
+      inset: -40px 40%;
+      background:
+        radial-gradient(circle, rgba(15, 23, 42, 0.5) 0, transparent 60%);
+      opacity: 0.8;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .mi6-hud-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .mi6-led {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.9);
+    }
+
+    .mi6-hud-title {
+      font-size: 0.9rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--mi6-text);
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--mi6-border);
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .mi6-hud-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.78rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .mi6-pill {
+      border-radius: 999px;
+      border: 1px solid var(--mi6-border);
+      padding: 4px 10px;
+      color: var(--mi6-muted);
+      background: rgba(15, 23, 42, 0.9);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .mi6-pill i {
+      font-size: 0.8rem;
+      color: var(--mi6-cyan);
+    }
+
+    .mi6-pill.alert {
+      border-color: var(--mi6-red);
+      color: #fecaca;
+    }
+
+    .mi6-pill.alert i {
+      color: var(--mi6-red);
+    }
+
+    /* ========== LOADING OVERLAY ========== */
+    #loadingScreen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 18px;
+      background: radial-gradient(
+        circle at top,
+        rgba(15, 23, 42, 0.9),
+        rgba(2, 6, 23, 0.98)
+      );
+      backdrop-filter: blur(16px);
+      z-index: 20;
+    }
+
+    .mi6-scan-ring {
+      width: 94px;
+      height: 94px;
+      border-radius: 50%;
+      border: 2px solid rgba(148, 163, 184, 0.6);
+      position: relative;
+      box-shadow: 0 0 18px rgba(34, 211, 238, 0.5);
+      overflow: hidden;
+    }
+
+    .mi6-scan-ring::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border-top: 3px solid var(--mi6-cyan);
+      border-right: 3px solid transparent;
+      border-bottom: 3px solid transparent;
+      border-left: 3px solid transparent;
+      animation: spin 1.3s linear infinite;
+    }
+
+    .mi6-scan-ring::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -15%;
+      width: 2px;
+      height: 130%;
+      background: linear-gradient(
+        to bottom,
+        rgba(34, 211, 238, 0),
+        rgba(34, 211, 238, 0.9),
+        rgba(34, 211, 238, 0)
+      );
+      transform: translateX(-50%);
+      animation: scan-line 1.8s ease-in-out infinite;
+    }
+
+    .mi6-loading-text {
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--mi6-muted);
+    }
+
+    .mi6-loading-text span {
+      display: block;
+      margin-top: 4px;
+      font-size: 0.78rem;
+      opacity: 0.85;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes scan-line {
+      0% { transform: translate(-50%, -130%); }
+      50% { transform: translate(-50%, 35%); }
+      100% { transform: translate(-50%, 130%); }
+    }
+
+    /* ========== MAIN ========== */
+    #mainContent {
+      display: none; /* 載入成功後由 JS 顯示 */
+      padding: 18px 20px 16px;
+    }
+
+    .mi6-header-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .mi6-heading-block h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .mi6-heading-block small {
+      display: block;
+      margin-top: 4px;
+      font-size: 0.78rem;
+      color: var(--mi6-muted);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .mi6-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    /* 更新時間 */
+    #updateTime {
+      font-size: 0.8rem;
+      color: var(--mi6-muted);
+      border-radius: 999px;
+      padding: 4px 10px;
+      border: 1px dashed var(--mi6-border);
+      background: rgba(15, 23, 42, 0.9);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #updateTime i {
+      color: var(--mi6-gold);
+      font-size: 0.78rem;
+    }
+
+    /* Selector & 按鈕 */
+    #citySelector {
+      min-width: 170px;
+      border-radius: 999px;
+      border: 1px solid var(--mi6-border-soft);
+      padding: 7px 12px;
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--mi6-text);
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    #citySelector:focus {
+      border-color: var(--mi6-cyan);
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.5);
+    }
+
+    #locateButton {
+      border-radius: 999px;
+      border: 0;
+      padding: 7px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #020617;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #facc15, #f97316);
+      box-shadow: 0 10px 22px rgba(250, 204, 21, 0.35);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    #locateButton i {
+      font-size: 0.95rem;
+    }
+
+    #locateButton:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 30px rgba(250, 204, 21, 0.5);
+    }
+
+    /* Layout grid */
+    .mi6-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.5fr);
+      gap: 18px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 960px) {
+      .mi6-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .mi6-panel {
+      border-radius: 20px;
+      border: 1px solid var(--mi6-border);
+      background: radial-gradient(circle at top right,
+        rgba(37, 99, 235, 0.12),
+        transparent 55%
+      ),
+      var(--mi6-panel);
+      padding: 14px 14px 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mi6-panel::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background:
+        radial-gradient(circle at center,
+          rgba(15, 23, 42, 0.8) 0,
+          transparent 45%);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .mi6-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .mi6-panel-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--mi6-muted);
+    }
+
+    .mi6-panel-sub {
+      font-size: 0.78rem;
+      color: var(--mi6-muted);
+    }
+
+    /* Forecast list */
+    #forecastList {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 10px;
+    }
+
+    .mi6-forecast-card {
+      position: relative;
+      border-radius: 18px;
+      border: 1px solid var(--mi6-border);
+      background: radial-gradient(circle at top left,
+          rgba(55, 65, 81, 0.5),
+          #020617 55%);
+      padding: 11px 12px 10px;
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+    }
+
+    .mi6-forecast-card::before {
+      /* 槍管/瞄準感 */
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background:
+        radial-gradient(circle at center,
+          rgba(15, 23, 42, 0) 0,
+          rgba(15, 23, 42, 0) 32%,
+          rgba(148, 163, 184, 0.12) 33%,
+          rgba(148, 163, 184, 0.12) 36%,
+          transparent 37%);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .mi6-forecast-card::after {
+      /* 十字線 */
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to right, transparent 49.5%, rgba(100,116,139,0.18) 50%, transparent 50.5%),
+        linear-gradient(to bottom, transparent 49.5%, rgba(100,116,139,0.18) 50%, transparent 50.5%);
+      opacity: 0.2;
+      pointer-events: none;
+    }
+
+    .mi6-fc-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .mi6-fc-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--mi6-muted);
+      margin-bottom: 4px;
+    }
+
+    .mi6-fc-label {
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.6);
+      background: rgba(8, 47, 73, 0.9);
+      color: #e0f2fe;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .mi6-fc-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mi6-temp-col {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .mi6-temp-main {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: var(--mi6-gold);
+      text-shadow: 0 0 12px rgba(250, 204, 21, 0.35);
+    }
+
+    .mi6-temp-unit {
+      font-size: 0.9rem;
+      color: var(--mi6-muted);
+    }
+
+    .mi6-temp-range {
+      font-size: 0.78rem;
+      color: var(--mi6-muted);
+    }
+
+    .mi6-weather-col {
+      font-size: 0.9rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+
+    .mi6-weather-col i {
+      color: var(--mi6-cyan);
+    }
+
+    .mi6-fc-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 0.75rem;
+      color: var(--mi6-muted);
+    }
+
+    .mi6-fc-meta-pill {
+      border-radius: 999px;
+      padding: 3px 7px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(15, 23, 42, 0.92);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .mi6-fc-meta-pill i {
+      font-size: 0.78rem;
+    }
+
+    /* 建議區塊 */
+    .mi6-advice-list {
+      margin-top: 6px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
+      font-size: 0.8rem;
+    }
+
+    .mi6-advice-item {
+      border-radius: 14px;
+      border: 1px dashed rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.94);
+      padding: 6px 8px;
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+    }
+
+    .mi6-advice-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: radial-gradient(circle at top,
+        var(--mi6-cyan),
+        #0ea5e9);
+      color: #020617;
+    }
+
+    .mi6-advice-icon.hot {
+      background: radial-gradient(circle at top, #f97373, #ef4444);
+      color: #fff7ed;
+    }
+
+    .mi6-advice-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--mi6-muted);
+      margin-bottom: 1px;
+    }
+
+    .mi6-advice-text {
+      color: #e5e7eb;
+    }
+
+    /* ========== RIGHT SIDE PANELS ========== */
+    .mi6-side-column {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .mi6-location-panel {
+      border-radius: 18px;
+      border: 1px solid var(--mi6-border);
+      background:
+        radial-gradient(circle at top left,
+          rgba(250, 204, 21, 0.12),
+          transparent 60%),
+        var(--mi6-panel-soft);
+      padding: 12px 12px 10px;
+    }
+
+    .mi6-location-label {
+      font-size: 0.78rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--mi6-muted);
+    }
+
+    .mi6-location-main {
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .mi6-location-main i {
+      color: var(--mi6-cyan);
+    }
+
+    #cityName {
+      /* 由 JS 填入城市名稱 */
+    }
+
+    .mi6-location-sub {
+      margin-top: 4px;
+      font-size: 0.78rem;
+      color: var(--mi6-muted);
+    }
+
+    .mi6-summary-panel {
+      border-radius: 18px;
+      border: 1px solid var(--mi6-border);
+      background: rgba(15, 23, 42, 0.96);
+      padding: 10px 11px 10px;
+      font-size: 0.8rem;
+      color: var(--mi6-muted);
+    }
+
+    .mi6-summary-title {
+      font-size: 0.78rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    #summaryText {
+      line-height: 1.4;
+    }
+
+    #summaryText strong {
+      color: var(--mi6-text);
+    }
+
+    /* Icon legend */
+    .mi6-legend {
+      border-radius: 18px;
+      border: 1px dashed rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.96);
+      padding: 9px 10px;
+      font-size: 0.78rem;
+      color: var(--mi6-muted);
+    }
+
+    .mi6-legend-title {
+      font-size: 0.75rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .mi6-legend-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px 10px;
+    }
+
+    .mi6-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mi6-legend-item i {
+      width: 20px;
+      text-align: center;
+    }
+
+    /* ========== FOOTER ========== */
+    .mi6-footer {
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(75, 85, 99, 0.8);
+      font-size: 0.7rem;
+      color: var(--mi6-muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+    }
+
+    .mi6-footer span.mi6-alert-text {
+      color: var(--mi6-red);
+    }
+
+    @media (max-width: 720px) {
+      .mi6-footer {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
 </head>
 <body>
-<div class="app-shell">
-    <!-- HUD -->
-    <div class="hud-bar">
-        <div class="hud-left">
-            <div class="hud-led"></div>
-            <div class="hud-title">CWA · FIELD OPS CONSOLE</div>
-        </div>
-        <div class="hud-right">
-            <div class="hud-pill">
-                <i class="fa-solid fa-satellite-dish"></i>
-                <span>LINK: TW WEATHER GRID</span>
-            </div>
-            <div class="hud-pill">
-                <i class="fa-solid fa-shield-halved"></i>
-                <span>ACCESS: AGENT-LVL</span>
-            </div>
-        </div>
+<div class="mi6-shell">
+  <!-- HUD -->
+  <header class="mi6-hud">
+    <div class="mi6-hud-left">
+      <div class="mi6-led"></div>
+      <div class="mi6-hud-title">MI6 · WEATHER OPS CONSOLE</div>
+    </div>
+    <div class="mi6-hud-right">
+      <div class="mi6-pill">
+        <i class="fa-solid fa-flask"></i>
+        <span>LINK: Q-BRANCH WEATHER LAB</span>
+      </div>
+      <div class="mi6-pill">
+        <i class="fa-solid fa-user-secret"></i>
+        <span>CLEARANCE: 00-LEVEL</span>
+      </div>
+      <div class="mi6-pill alert">
+        <i class="fa-solid fa-satellite-dish"></i>
+        <span>LIVE FEED: ONLINE</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Loading overlay（由 JS 控制顯示/隱藏） -->
+  <div id="loadingScreen">
+    <div class="mi6-scan-ring"></div>
+    <div class="mi6-loading-text">
+      <div>SECURE LINK TO Q-BRANCH WEATHER GRID…</div>
+      <span>建立加密通道並下載三十六小時任務氣象情報</span>
+    </div>
+  </div>
+
+  <!-- Main content（載入成功後顯示） -->
+  <main id="mainContent">
+    <!-- Top row: title + controls -->
+    <div class="mi6-header-row">
+      <div class="mi6-heading-block">
+        <h1>台灣特務氣象局 · MI6 分部</h1>
+        <small>MISSION BRIEF · 36H FIELD WEATHER INTEL</small>
+      </div>
+
+      <div class="mi6-controls">
+        <span id="updateTime">
+          <i class="fa-regular fa-clock"></i>
+          情報時間：同步中…
+        </span>
+        <select id="citySelector"></select>
+        <button id="locateButton">
+          <i class="fa-solid fa-location-crosshairs"></i>
+          Use Geo-Lock
+        </button>
+      </div>
     </div>
 
-    <!-- Loading overlay -->
-    <div id="loadingScreen">
-        <div class="loading-radar"></div>
-        <div class="loading-text">
-            <div>連線至總部氣象衛星中…</div>
-            <span>正在校準台灣各地降雨偵測陣列</span>
+    <!-- Main grid -->
+    <section class="mi6-grid">
+      <!-- LEFT: Forecast grid -->
+      <section class="mi6-panel">
+        <div class="mi6-panel-header">
+          <div class="mi6-panel-title">FORECAST GRID</div>
+          <div class="mi6-panel-sub">Q-BRANCH 36H OP WINDOW</div>
         </div>
-    </div>
-
-    <!-- Main content -->
-    <main id="mainContent">
-        <div class="header-row">
-            <div class="heading-block">
-                <h1>台灣特務氣象局</h1>
-                <small>FIELD WEATHER BRIEF · 三十六小時行動情報</small>
+        <div id="forecastList">
+          <!-- 這裡內容由 JS 動態產生。下方是示範一張卡片，可保留給你參考結構 -->
+          <!--
+          <article class="mi6-forecast-card">
+            <div class="mi6-fc-inner">
+              <div class="mi6-fc-top">
+                <span>12/6 上午 06:00</span>
+                <span class="mi6-fc-label">OP WINDOW 1</span>
+              </div>
+              <div class="mi6-fc-main">
+                <div class="mi6-temp-col">
+                  <div class="mi6-temp-main">23</div>
+                  <div class="mi6-temp-unit">°C</div>
+                </div>
+                <div class="mi6-weather-col">
+                  <span><i class="fa-solid fa-cloud-sun"></i> 晴時多雲</span>
+                  <span class="mi6-temp-range">最低 19°C</span>
+                </div>
+              </div>
+              <div class="mi6-fc-meta-row">
+                <div class="mi6-fc-meta-pill">
+                  <i class="fa-solid fa-droplet"></i>
+                  降雨機率 20%
+                </div>
+                <div class="mi6-fc-meta-pill">
+                  <i class="fa-solid fa-face-smile"></i>
+                  體感舒適
+                </div>
+              </div>
+              <div class="mi6-advice-list">
+                <div class="mi6-advice-item">
+                  <div class="mi6-advice-icon">
+                    <i class="fa-solid fa-umbrella"></i>
+                  </div>
+                  <div>
+                    <div class="mi6-advice-label">RAIN GEAR</div>
+                    <div class="mi6-advice-text">
+                      一般傘具即可，雨勢不至於影響任務執行。
+                    </div>
+                  </div>
+                </div>
+                <div class="mi6-advice-item">
+                  <div class="mi6-advice-icon hot">
+                    <i class="fa-solid fa-user-tie"></i>
+                  </div>
+                  <div>
+                    <div class="mi6-advice-label">OUTFIT</div>
+                    <div class="mi6-advice-text">
+                      適合正式外出任務，建議黑色西裝搭配輕便內層。
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </article>
+          -->
+        </div>
+      </section>
 
-            <div class="control-row">
-                <span class="update-pill" id="updateTime">
-                    <i class="fa-regular fa-clock"></i>
-                    情報時間：載入中…
-                </span>
-                <select id="citySelector"></select>
-                <button id="locateButton">
-                    <i class="fa-solid fa-location-crosshairs"></i>
-                    使用定位
-                </button>
+      <!-- RIGHT: Agent info / Mission brief / Legend -->
+      <section class="mi6-side-column">
+        <section class="mi6-location-panel">
+          <div class="mi6-location-label">AGENT STATUS · ACTIVE AOI</div>
+          <div class="mi6-location-main">
+            <i class="fa-solid fa-location-dot"></i>
+            <span id="cityName">—</span>
+          </div>
+          <div class="mi6-location-sub">
+            当前作戰區域由 MI6 台灣分部 &amp; 中央氣象局聯合監測。
+          </div>
+        </section>
+
+        <section class="mi6-summary-panel">
+          <div class="mi6-summary-title">MISSION BRIEF</div>
+          <div id="summaryText">
+            等候 Q-Branch 傳回第一波三十六小時氣象情報。  
+            情報同步完成後，將為你整理出適合的裝備與行動窗格。
+          </div>
+        </section>
+
+        <section class="mi6-legend">
+          <div class="mi6-legend-title">Q-BRANCH GEAR LEGEND</div>
+          <div class="mi6-legend-grid">
+            <div class="mi6-legend-item">
+              <i class="fa-solid fa-fire-flame-curved"></i>
+              <span>HOT ZONE：高溫行動</span>
             </div>
-        </div>
+            <div class="mi6-legend-item">
+              <i class="fa-solid fa-temperature-low"></i>
+              <span>COLD FRONT：低溫環境</span>
+            </div>
+            <div class="mi6-legend-item">
+              <i class="fa-solid fa-umbrella"></i>
+              <span>RAIN GEAR：防雨裝備</span>
+            </div>
+            <div class="mi6-legend-item">
+              <i class="fa-solid fa-toolbox"></i>
+              <span>STANDARD KIT：一般裝備</span>
+            </div>
+            <div class="mi6-legend-item">
+              <i class="fa-solid fa-user-tie"></i>
+              <span>BLACK TIE OPS：正式外出</span>
+            </div>
+            <div class="mi6-legend-item">
+              <i class="fa-solid fa-moon"></i>
+              <span>NIGHT RUN：夜間行動</span>
+            </div>
+            <div class="mi6-legend-item">
+              <i class="fa-solid fa-skull-crossbones"></i>
+              <span>HIGH RISK：高危任務</span>
+            </div>
+            <div class="mi6-legend-item">
+              <i class="fa-solid fa-bell"></i>
+              <span>BASE ALERT：基地警報</span>
+            </div>
+          </div>
+        </section>
+      </section>
+    </section>
 
-        <div class="body-grid">
-            <!-- 左側：預報卡片 -->
-            <section class="panel">
-                <div class="panel-header">
-                    <div class="panel-title">FORECAST GRID</div>
-                    <div class="panel-sub">今明 36 小時 · 三時段預報</div>
-                </div>
-
-                <div id="forecastList"></div>
-            </section>
-
-            <!-- 右側：城市資訊與摘要 -->
-            <section class="city-panel">
-                <div class="city-name-display">
-                    <div class="city-name-line">ACTIVE AOI</div>
-                    <div class="city-name-main">
-                        <i class="fa-solid fa-location-dot"></i>
-                        <span id="cityName">—</span>
-                    </div>
-                    <div class="city-name-sub">
-                        特務小組作戰區域 · 中央氣象署授權資料
-                    </div>
-                </div>
-
-                <div class="summary-panel">
-                    <div class="summary-title">MISSION BRIEF</div>
-                    <div class="summary-body" id="summaryText">
-                        等候第一波情報傳回中。請稍後…
-                    </div>
-                </div>
-            </section>
-        </div>
-    </main>
+    <!-- Footer -->
+    <footer class="mi6-footer">
+      <span class="mi6-alert-text">CLASSIFIED // EYES ONLY</span>
+      <span>MI6 WEATHER OPS CONSOLE · BUILD v0.7 · LICENSED TO 00-AGENT</span>
+    </footer>
+  </main>
 </div>
 
+<!-- 這裡可以接回你的 JS，例如先前的 weather 取得程式碼 -->
 <script>
-    // === 設定 ===
-    // 後端（Zeabur）網址，必要時請改成你實際部署的網域
-    const BASE_API_URL = "https://weather-taiwan-gianni.zeabur.app";
-    const DEFAULT_CITY = "臺北市";
-
-    // === Loading 控制 ===
-    function startLoading() {
-        const loading = document.getElementById("loadingScreen");
-        if (loading) loading.style.display = "flex";
-    }
-
-    function stopLoading() {
-        const loading = document.getElementById("loadingScreen");
-        const main = document.getElementById("mainContent");
-        if (loading) loading.style.display = "none";
-        if (main) main.style.display = "block";
-    }
-
-    // === API 呼叫 ===
-    async function fetchJSON(url) {
-        const res = await fetch(url);
-        const json = await res.json();
-        if (!res.ok || json.success === false) {
-            throw new Error(json.message || "API Error");
-        }
-        return json;
-    }
-
-    // === 取得城市列表，填入 selector ===
-    async function populateCitySelector() {
-        const selector = document.getElementById("citySelector");
-        if (!selector) return;
-
-        try {
-            startLoading();
-            const data = await fetchJSON(`${BASE_API_URL}/api/cities`);
-
-            selector.innerHTML = "";
-            (data.cities || []).forEach((city) => {
-                const opt = document.createElement("option");
-                opt.value = city;
-                opt.textContent = city;
-                selector.appendChild(opt);
-            });
-
-            selector.value = DEFAULT_CITY;
-
-            selector.addEventListener("change", (e) => {
-                const city = e.target.value;
-                fetchWeather(city);
-            });
-        } catch (err) {
-            console.error(err);
-            alert(`特務警報：無法取得城市清單。\n\n詳細：${err.message}`);
-        } finally {
-            // 留給第一次 fetchWeather() 來關閉 loading
-        }
-    }
-
-    // === 取得單一城市天氣並渲染 ===
-    async function fetchWeather(cityName) {
-        try {
-            startLoading();
-
-            const data = await fetchJSON(
-                `${BASE_API_URL}/api/weather/${encodeURIComponent(cityName)}`
-            );
-
-            renderWeather(data);
-        } catch (err) {
-            console.error(err);
-            alert(
-                `特務警報：無法取得「${cityName}」天氣情報。\n\n詳細：${err.message}`
-            );
-        } finally {
-            stopLoading();
-        }
-    }
-
-    // === 給建議：衣著 / 防雨 ===
-    function getAdvice(maxTemp, rainProb) {
-        const rain = parseInt(rainProb, 10);
-        const temp = parseInt(maxTemp, 10);
-
-        let rainIcon = "fa-solid fa-briefcase";
-        let rainText = "無須額外防雨裝備。保持靈活行動即可。";
-
-        if (!isNaN(rain)) {
-            if (rain > 60) {
-                rainIcon = "fa-solid fa-house-crack";
-                rainText = "警戒！降雨機率極高，請備妥雨具與防水裝備。";
-            } else if (rain > 30) {
-                rainIcon = "fa-solid fa-umbrella";
-                rainText = "建議攜帶雨具，以防突發性降雨干擾任務。";
-            }
-        }
-
-        let clothIcon = "fa-solid fa-user";
-        let clothText = "一般便服即可，注意保持行動方便。";
-
-        if (!isNaN(temp)) {
-            if (temp >= 30) {
-                clothIcon = "fa-solid fa-fire-flame-simple";
-                clothText = "高溫行動，請準備透氣衣物與補充水分。";
-            } else if (temp <= 20) {
-                clothIcon = "fa-solid fa-user-secret";
-                clothText = "氣溫偏涼，建議配置保暖外套與層次穿搭。";
-            }
-        }
-
-        return {
-            rainIcon,
-            rainText,
-            clothIcon,
-            clothText
-        };
-    }
-
-    // === 渲染畫面 ===
-    function renderWeather(data) {
-        const cityNameEl = document.getElementById("cityName");
-        const updateTimeEl = document.getElementById("updateTime");
-        const forecastListEl = document.getElementById("forecastList");
-        const summaryEl = document.getElementById("summaryText");
-
-        if (!forecastListEl) return;
-
-        // 城市名稱
-        if (cityNameEl) {
-            cityNameEl.textContent = data.city || "未知城市";
-        }
-
-        // 更新時間（加上防呆）
-        let timeText = "未知";
-        if (data.updateTime) {
-            try {
-                const d = new Date(data.updateTime);
-                if (!isNaN(d.getTime())) {
-                    timeText = d.toLocaleTimeString("zh-TW", {
-                        hour: "2-digit",
-                        minute: "2-digit"
-                    });
-                }
-            } catch (e) {
-                console.warn("updateTime parse error:", e);
-            }
-        }
-        if (updateTimeEl) {
-            updateTimeEl.innerHTML = `
-                <i class="fa-regular fa-clock"></i>
-                情報時間：${timeText}
-            `;
-        }
-
-        // 製作預報卡片
-        forecastListEl.innerHTML = "";
-        const forecasts = data.forecasts || [];
-
-        let summaryPieces = [];
-
-        forecasts.forEach((f, idx) => {
-            const card = document.createElement("article");
-            card.className = "forecast-card";
-
-            const timeLabel = f.startTime
-                ? new Date(f.startTime).toLocaleString("zh-TW", {
-                      month: "numeric",
-                      day: "numeric",
-                      hour: "2-digit"
-                  })
-                : `時段 ${idx + 1}`;
-
-            const mainTemp = f.maxTemp || "--";
-            const minTemp = f.minTemp || "--";
-            const wx = f.wx || "—";
-            const rain = f.rainProb || "--";
-            const comfort = f.comfort || "—";
-
-            const advice = getAdvice(mainTemp, rain);
-
-            card.innerHTML = `
-                <div class="fc-top-row">
-                    <div class="fc-time">${timeLabel}</div>
-                    <div class="fc-label">OP WINDOW ${idx + 1}</div>
-                </div>
-                <div class="fc-main-row">
-                    <div class="fc-temp-block">
-                        <div class="fc-temp-main">${mainTemp}<span style="font-size:0.9rem;">°C</span></div>
-                        <div class="fc-temp-range">最低 ${minTemp}°C</div>
-                    </div>
-                    <div class="fc-weather">
-                        <i class="fa-solid fa-cloud-sun"></i>
-                        <span>${wx}</span>
-                    </div>
-                </div>
-                <div class="fc-meta-row">
-                    <div class="fc-meta-pill">
-                        <i class="fa-solid fa-droplet"></i>
-                        <span>降雨機率 ${rain || "--"}%</span>
-                    </div>
-                    <div class="fc-meta-pill">
-                        <i class="fa-solid fa-face-smile"></i>
-                        <span>${comfort}</span>
-                    </div>
-                </div>
-                <div class="advice-list">
-                    <div class="advice-item">
-                        <div class="advice-icon"><i class="${advice.rainIcon}"></i></div>
-                        <div>
-                            <div class="advice-label">RAIN GEAR</div>
-                            <div class="advice-text">${advice.rainText}</div>
-                        </div>
-                    </div>
-                    <div class="advice-item">
-                        <div class="advice-icon hot"><i class="${advice.clothIcon}"></i></div>
-                        <div>
-                            <div class="advice-label">OUTFIT</div>
-                            <div class="advice-text">${advice.clothText}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            forecastListEl.appendChild(card);
-
-            if (idx < 3) {
-                summaryPieces.push(
-                    `${timeLabel} 預估 <strong>${wx}</strong>，最高溫約 <strong>${mainTemp}°C</strong>，降雨機率約 <strong>${rain || "--"}%</strong>。`
-                );
-            }
-        });
-
-        if (summaryEl) {
-            if (summaryPieces.length > 0) {
-                summaryEl.innerHTML =
-                    summaryPieces.join("<br>") +
-                    `<br><br>請依建議調整衣著與防雨裝備，以確保任務執行安全順利。`;
-            } else {
-                summaryEl.textContent = "暫無可用預報資料，請稍後重新整理。";
-            }
-        }
-    }
-
-    // === 定位 → 對應最近縣市 ===
-    const CITY_COORDS = {
-        "臺北市": { lat: 25.0375, lon: 121.5637 },
-        "新北市": { lat: 25.0122, lon: 121.4657 },
-        "桃園市": { lat: 24.9936, lon: 121.3000 },
-        "臺中市": { lat: 24.1477, lon: 120.6736 },
-        "臺南市": { lat: 22.9997, lon: 120.2270 },
-        "高雄市": { lat: 22.6273, lon: 120.3014 },
-        "基隆市": { lat: 25.1283, lon: 121.7419 },
-        "新竹市": { lat: 24.8039, lon: 120.9647 },
-        "嘉義市": { lat: 23.4801, lon: 120.4491 },
-        "新竹縣": { lat: 24.8387, lon: 121.0173 },
-        "苗栗縣": { lat: 24.5602, lon: 120.8214 },
-        "彰化縣": { lat: 24.0756, lon: 120.5434 },
-        "南投縣": { lat: 23.9609, lon: 120.9719 },
-        "雲林縣": { lat: 23.7092, lon: 120.5420 },
-        "嘉義縣": { lat: 23.4589, lon: 120.2550 },
-        "屏東縣": { lat: 22.5519, lon: 120.5480 },
-        "宜蘭縣": { lat: 24.7021, lon: 121.7378 },
-        "花蓮縣": { lat: 23.9872, lon: 121.6015 },
-        "臺東縣": { lat: 22.7546, lon: 121.1440 },
-        "澎湖縣": { lat: 23.5710, lon: 119.5790 },
-        "金門縣": { lat: 24.4494, lon: 118.3771 },
-        "連江縣": { lat: 26.1600, lon: 119.9499 }
-    };
-
-    function findNearestCity(lat, lon) {
-        let nearest = null;
-        let bestDist = Infinity;
-        for (const [city, coord] of Object.entries(CITY_COORDS)) {
-            const dLat = lat - coord.lat;
-            const dLon = lon - coord.lon;
-            const dist = dLat * dLat + dLon * dLon;
-            if (dist < bestDist) {
-                bestDist = dist;
-                nearest = city;
-            }
-        }
-        return nearest;
-    }
-
-    function locateAndFetchWeather() {
-        if (!navigator.geolocation) {
-            alert("此裝置不支援定位功能。");
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const { latitude, longitude } = pos.coords;
-                const city = findNearestCity(latitude, longitude);
-                if (!city) {
-                    alert("無法判定最近城市，請改用下拉選單選擇。");
-                    return;
-                }
-                const selector = document.getElementById("citySelector");
-                if (selector) selector.value = city;
-                fetchWeather(city);
-            },
-            (err) => {
-                alert("無法取得定位資料：" + err.message);
-            }
-        );
-    }
-
-    // === 啟動程式 ===
-    document.addEventListener("DOMContentLoaded", async () => {
-        await populateCitySelector();      // 先載入城市
-        await fetchWeather(DEFAULT_CITY);  // 預設載入一次天氣
-
-        const locateBtn = document.getElementById("locateButton");
-        if (locateBtn) {
-            locateBtn.addEventListener("click", locateAndFetchWeather);
-        }
-    });
+  // Demo: 只為了展示 UI，1 秒後關掉 loading。
+  // 實際使用時，用你自己的 fetch 完成後再呼叫 stopLoading。
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      const loading = document.getElementById("loadingScreen");
+      const main = document.getElementById("mainContent");
+      if (loading) loading.style.display = "none";
+      if (main) main.style.display = "block";
+    }, 1000);
+  });
 </script>
 </body>
 </html>
